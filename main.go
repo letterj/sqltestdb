@@ -10,7 +10,10 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("sqlite3", "/mnt/cfsdrive00/foo.db")
+	count, err := strconv.Atoi(os.Args[2])
+	checkErr(err)
+
+	db, err := sql.Open("sqlite3", os.Args[1])
 	checkErr(err)
 	fmt.Println("Open DB")
 
@@ -31,8 +34,6 @@ func main() {
 	stmt, err = db.Prepare("INSERT INTO test2 (id, name) values(?,?)")
 	checkErr(err)
 
-	count, err := strconv.Atoi(os.Args[1])
-	checkErr(err)
 	for i := 1; i < count; i++ {
 		// insert
 		fmt.Println("COUNT", i)
