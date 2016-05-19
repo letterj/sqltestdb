@@ -1,6 +1,6 @@
 
 
-## sqltestdb  <db> <number of inserts>
+## sqltestdb db transcount
 
 Example
 
