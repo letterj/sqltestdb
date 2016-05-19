@@ -3,68 +3,69 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	db, err := sql.Open("sqlite3", "./foo.db")
+	db, err := sql.Open("sqlite3", "/mnt/cfsdrive00/foo.db")
+	checkErr(err)
+	fmt.Println("Open DB")
+
+	stmt, err := db.Prepare("DROP TABLE IF EXISTS test2;")
+	checkErr(err)
+	fmt.Println("Drop table if exists")
+
+	res, err := stmt.Exec()
 	checkErr(err)
 
-	// insert
-	stmt, err := db.Prepare("INSERT INTO userinfo(username, departname, created) values(?,?,?)")
+	stmt, err = db.Prepare("CREATE TABLE test2 (id int, name text);")
+	checkErr(err)
+	fmt.Println("Create table")
+
+	res, err = stmt.Exec()
 	checkErr(err)
 
-	res, err := stmt.Exec("astaxie", "研发部门", "2012-12-09")
+	stmt, err = db.Prepare("INSERT INTO test2 (id, name) values(?,?)")
 	checkErr(err)
 
-	id, err := res.LastInsertId()
+	count, err := strconv.Atoi(os.Args[1])
 	checkErr(err)
-
-	fmt.Println(id)
-	// update
-	stmt, err = db.Prepare("update userinfo set username=? where uid=?")
-	checkErr(err)
-
-	res, err = stmt.Exec("astaxieupdate", id)
-	checkErr(err)
-
-	affect, err := res.RowsAffected()
-	checkErr(err)
-
-	fmt.Println(affect)
-
-	// query
-	rows, err := db.Query("SELECT * FROM userinfo")
-	checkErr(err)
-
-	for rows.Next() {
-		var uid int
-		var username string
-		var department string
-		var created string
-		err = rows.Scan(&uid, &username, &department, &created)
+	for i := 1; i < count; i++ {
+		// insert
+		fmt.Println("COUNT", i)
+		res, err = stmt.Exec(i, "Testdata")
 		checkErr(err)
-		fmt.Println(uid)
-		fmt.Println(username)
-		fmt.Println(department)
-		fmt.Println(created)
+
+		id, err := res.LastInsertId()
+		checkErr(err)
+		fmt.Println("LAST_INSERTED_ID", id)
+
+		affect, err := res.RowsAffected()
+		checkErr(err)
+		fmt.Println("ROWS_AFFECTED", affect)
 	}
 
-	// delete
-	stmt, err = db.Prepare("delete from userinfo where uid=?")
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("QUERYING THE DB")
+	fmt.Println("===============")
+	// query
+	rows, err := db.Query("SELECT * FROM test2")
 	checkErr(err)
 
-	res, err = stmt.Exec(id)
-	checkErr(err)
+	var test2_ID int
+	var test2_Name string
 
-	affect, err = res.RowsAffected()
-	checkErr(err)
-
-	fmt.Println(affect)
+	for rows.Next() {
+		err = rows.Scan(&test2_ID, &test2_Name)
+		checkErr(err)
+		fmt.Printf("ID: %d, NAME: %s\n", test2_ID, test2_Name)
+	}
 
 	db.Close()
-
 }
 
 func checkErr(err error) {
