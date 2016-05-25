@@ -12,32 +12,47 @@ import (
 func main() {
 	count, err := strconv.Atoi(os.Args[2])
 	checkErr(err)
+	fmt.Printf("Writing %s records.\n", count)
 
 	db, err := sql.Open("sqlite3", os.Args[1])
 	checkErr(err)
-	fmt.Println("Open DB")
+	fmt.Printf("Open DB %s.\n", os.Args[1])
+	defer db.Close()
 
-	stmt, err := db.Prepare("DROP TABLE IF EXISTS test2;")
+	ddl := `
+        PRAGMA automatic_index = ON;
+        PRAGMA cache_size = 32768;
+        PRAGMA cache_spill = OFF;
+        PRAGMA foreign_keys = ON;
+        PRAGMA journal_size_limit = 67110000;
+        PRAGMA locking_mode = NORMAL;
+        PRAGMA page_size = 4096;
+        PRAGMA recursive_triggers = ON;
+        PRAGMA secure_delete = ON;
+        PRAGMA synchronous = NORMAL;
+        PRAGMA temp_store = MEMORY;
+        PRAGMA journal_mode = WAL;
+        PRAGMA wal_autocheckpoint = 16384;
+
+				DROP TABLE IF EXISTS test2;
+
+        CREATE TABLE test2 (
+            id INT,
+          	name TEXT
+        );
+	`
+
+	_, err = db.Exec(ddl)
 	checkErr(err)
-	fmt.Println("Drop table if exists")
+	fmt.Println("Process ddl statements")
 
-	res, err := stmt.Exec()
-	checkErr(err)
-
-	stmt, err = db.Prepare("CREATE TABLE test2 (id int, name text);")
-	checkErr(err)
-	fmt.Println("Create table")
-
-	res, err = stmt.Exec()
-	checkErr(err)
-
-	stmt, err = db.Prepare("INSERT INTO test2 (id, name) values(?,?)")
+	stmt, err := db.Prepare("INSERT INTO test2 (id, name) values(?,?)")
 	checkErr(err)
 
 	for i := 1; i < count; i++ {
 		// insert
 		fmt.Println("COUNT", i)
-		res, err = stmt.Exec(i, "Testdata")
+		res, err := stmt.Exec(i, "Testdata")
 		checkErr(err)
 
 		id, err := res.LastInsertId()
@@ -65,8 +80,6 @@ func main() {
 		checkErr(err)
 		fmt.Printf("ID: %d, NAME: %s\n", test2_ID, test2_Name)
 	}
-
-	db.Close()
 }
 
 func checkErr(err error) {
